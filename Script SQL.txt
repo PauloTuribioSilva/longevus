@@ -1,0 +1,89 @@
+﻿
+
+CREATE TABLE public.longevo (
+  id_longevo bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  criada_em timestamp with time zone NOT NULL DEFAULT now(),
+  nome_completo character varying NOT NULL DEFAULT ''::character varying,
+  idade smallint,
+  cpf character varying NOT NULL,
+  CONSTRAINT longevo_pkey PRIMARY KEY (id_longevo)
+);
+CREATE TABLE public.cuidador (
+  id_cuidador bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  criada_em timestamp with time zone NOT NULL DEFAULT now(),
+  nome_completo character varying NOT NULL DEFAULT ''::character varying,
+  abreviatura character varying NOT NULL DEFAULT ''::character varying,
+  cpf character varying NOT NULL DEFAULT ''::character varying,
+  email character varying NOT NULL DEFAULT ''::character varying,
+  senha character varying NOT NULL DEFAULT ''::character varying,
+  telefone character varying NOT NULL DEFAULT ''::character varying,
+  CONSTRAINT cuidador_pkey PRIMARY KEY (id_cuidador)
+);
+CREATE TABLE public.longevo_cuidador (
+  id_longevo_cuidador bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  id_longevo bigint NOT NULL,
+  id_cuidador bigint NOT NULL,
+  admin boolean NOT NULL DEFAULT false,
+  apelido_longevo character varying NOT NULL DEFAULT ''::character varying,
+  relacionamento character varying NOT NULL DEFAULT ''::character varying,
+  CONSTRAINT longevo_cuidador_pkey PRIMARY KEY (id_longevo_cuidador),
+  CONSTRAINT longevo_cuidador_id_longevo_fkey FOREIGN KEY (id_longevo) REFERENCES public.longevo(id_longevo),
+  CONSTRAINT longevo_cuidador_id_cuidador_fkey FOREIGN KEY (id_cuidador) REFERENCES public.cuidador(id_cuidador)
+);
+CREATE TABLE public.prescricao (
+  id_prescricao bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  id_longevo bigint NOT NULL,
+  id_medicamento bigint NOT NULL,
+  id_categoria_medicamento_ocasional bigint,
+  continuo boolean NOT NULL DEFAULT false,
+  inicio_uso_continuo timestamp without time zone,
+  fim_uso_continuo timestamp without time zone,
+  frequencia smallint NOT NULL DEFAULT '0'::smallint,
+  ultimo_uso_continuo timestamp without time zone,
+  CONSTRAINT prescricao_pkey PRIMARY KEY (id_prescricao),
+  CONSTRAINT prescricao_id_longevo_fkey FOREIGN KEY (id_longevo) REFERENCES public.longevo(id_longevo),
+  CONSTRAINT prescricao_id_medicamento_fkey FOREIGN KEY (id_medicamento) REFERENCES public.medicamento(id_medicamento),
+  CONSTRAINT prescricao_id_categoria_medicamento_ocasional_fkey FOREIGN KEY (id_categoria_medicamento_ocasional) REFERENCES public.categoria_remedio_ocasional(id_categoria_medicamento_ocasional)
+);
+CREATE TABLE public.administracao_prescricao (
+  id_administracao_prescricao bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  id_prescricao bigint NOT NULL,
+  id_cuidador bigint NOT NULL,
+  administrado boolean NOT NULL,
+  horario_confirmacao timestamp without time zone NOT NULL DEFAULT now(),
+  CONSTRAINT administracao_prescricao_pkey PRIMARY KEY (id_administracao_prescricao),
+  CONSTRAINT administracao_prescricao_id_prescricao_fkey FOREIGN KEY (id_prescricao) REFERENCES public.prescricao(id_prescricao),
+  CONSTRAINT administracao_prescricao_id_cuidador_fkey FOREIGN KEY (id_cuidador) REFERENCES public.cuidador(id_cuidador)
+);
+CREATE TABLE public.medicamento (
+  id_medicamento bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  nome character varying NOT NULL DEFAULT ''::character varying,
+  foto_url character varying,
+  bula character varying,
+  descricao text,
+  CONSTRAINT medicamento_pkey PRIMARY KEY (id_medicamento)
+);
+CREATE TABLE public.categoria_remedio_ocasional (
+  id_categoria_medicamento_ocasional bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  nome character varying NOT NULL DEFAULT ''::character varying,
+  CONSTRAINT categoria_remedio_ocasional_pkey PRIMARY KEY (id_categoria_medicamento_ocasional)
+);
+CREATE TABLE public.agenda_cuidado (
+  id_agenda_cuidado bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  dia_semana smallint,
+  horario_inicio time without time zone,
+  horaio_fim time without time zone,
+  id_longevo_cuidador bigint,
+  CONSTRAINT agenda_cuidado_pkey PRIMARY KEY (id_agenda_cuidado),
+  CONSTRAINT agenda_cuidado_id_longevo_cuidador_fkey FOREIGN KEY (id_longevo_cuidador) REFERENCES public.longevo_cuidador(id_longevo_cuidador)
+);
+CREATE TABLE public.activity_log (
+  id_activity_log bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  id_longevo bigint NOT NULL,
+  id_cuidador bigint NOT NULL,
+  activity text NOT NULL DEFAULT ''::text,
+  CONSTRAINT activity_log_pkey PRIMARY KEY (id_activity_log),
+  CONSTRAINT activity_log_id_longevo_fkey FOREIGN KEY (id_longevo) REFERENCES public.longevo(id_longevo),
+  CONSTRAINT activity_log_id_cuidador_fkey FOREIGN KEY (id_cuidador) REFERENCES public.cuidador(id_cuidador)
+);
