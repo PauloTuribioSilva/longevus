@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
 import '../home/select_elder_screen.dart';
+import 'register_admin_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -232,6 +233,33 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                       ),
                     ),
+                  const SizedBox(height: 20),
+Row(
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    const Text(
+      'Ainda não tem conta?',
+      style: TextStyle(color: AppTheme.textMuted),
+    ),
+    TextButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const RegisterAdminScreen(),
+          ),
+        );
+      },
+              child: const Text(
+                'Cadastre-se',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
                   ],
                 ),
               ),

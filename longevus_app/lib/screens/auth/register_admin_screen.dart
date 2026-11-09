@@ -11,90 +11,99 @@ class RegisterAdminScreen extends StatefulWidget {
 }
 
 class _RegisterAdminScreenState extends State<RegisterAdminScreen> {
-  int _currentStep = 0;
-  bool _isLoading = false;
+  final _supabase = Supabase.instance.client;
+  final _formKey = GlobalKey<FormState>();
 
-  // Campos tabela `cuidador`
+  // Dados do Administrador (Cuidador Principal)
   final _adminNameCtrl = TextEditingController();
-  final _adminAbbrCtrl = TextEditingController();
-  final _adminCpfCtrl = TextEditingController();
   final _adminPhoneCtrl = TextEditingController();
   final _adminEmailCtrl = TextEditingController();
-  final _adminPassCtrl = TextEditingController();
+  final _adminPasswordCtrl = TextEditingController();
 
-  // Campos tabela `longevo` + `longevo_cuidador`
+  // Dados do Primeiro Idoso
   final _elderNameCtrl = TextEditingController();
-  final _elderNicknameCtrl = TextEditingController();
-  final _elderAgeCtrl = TextEditingController();
+  final _elderNickCtrl = TextEditingController();
   final _elderCpfCtrl = TextEditingController();
+  final _elderAgeCtrl = TextEditingController();
   final _relationshipCtrl = TextEditingController(text: 'Filho(a)');
 
-  Future<void> _finishRegistration() async {
-    if (_adminEmailCtrl.text.trim().isEmpty ||
-        _adminPassCtrl.text.trim().length < 6 ||
-        _elderNameCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Preencha e-mail, senha (mín. 6 caracteres) e o nome do idoso.'),
-          backgroundColor: AppTheme.danger,
-        ),
-      );
-      return;
-    }
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    _adminNameCtrl.dispose();
+    _adminPhoneCtrl.dispose();
+    _adminEmailCtrl.dispose();
+    _adminPasswordCtrl.dispose();
+    _elderNameCtrl.dispose();
+    _elderNickCtrl.dispose();
+    _elderCpfCtrl.dispose();
+    _elderAgeCtrl.dispose();
+    _relationshipCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _registerAdminAndElder() async {
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    final supabase = Supabase.instance.client;
 
     try {
-      // 1. Cria autenticação no Supabase Auth (senha segura com hash nativo)
-      await supabase.auth.signUp(
-        email: _adminEmailCtrl.text.trim(),
-        password: _adminPassCtrl.text.trim(),
+      final email = _adminEmailCtrl.text.trim();
+      final password = _adminPasswordCtrl.text;
+
+      // 1. Cria o usuário no Supabase Auth
+      final authRes = await _supabase.auth.signUp(
+        email: email,
+        password: password,
       );
 
-      // 2. Insere na tabela `cuidador` e retorna o `id_cuidador` gerado
-      final cuidadorRes = await supabase
+      if (authRes.user == null) {
+        throw const AuthException('Não foi possível criar a conta de acesso.');
+      }
+
+      // 2. Insere o cuidador (administrador) na tabela 'cuidador'
+      final cuidadorRes = await _supabase
           .from('cuidador')
           .insert({
-            'nome_completo': _adminNameCtrl.text.trim(),
-            'abreviatura': _adminAbbrCtrl.text.trim().isEmpty
-                ? _adminNameCtrl.text.trim().split(' ').first
-                : _adminAbbrCtrl.text.trim(),
-            'cpf': _adminCpfCtrl.text.trim(),
-            'email': _adminEmailCtrl.text.trim(),
-            'senha': 'gerenciado_pelo_supabase_auth',
+            'nome': _adminNameCtrl.text.trim(),
             'telefone': _adminPhoneCtrl.text.trim(),
+            'email': email,
           })
           .select('id_cuidador')
           .single();
 
-      final int idCuidador = cuidadorRes['id_cuidador'];
+      final int cuidadorId = cuidadorRes['id_cuidador'] as int;
 
-      // 3. Insere na tabela `longevo` e retorna o `id_longevo` gerado
-      final longevoRes = await supabase
+      // 3. Insere o primeiro idoso na tabela 'longevo'
+      final longevoRes = await _supabase
           .from('longevo')
           .insert({
             'nome_completo': _elderNameCtrl.text.trim(),
-            'idade': int.tryParse(_elderAgeCtrl.text.trim()),
             'cpf': _elderCpfCtrl.text.trim(),
+            'idade': int.tryParse(_elderAgeCtrl.text.trim()),
           })
           .select('id_longevo')
           .single();
 
-      final int idLongevo = longevoRes['id_longevo'];
+      final int longevoId = longevoRes['id_longevo'] as int;
 
-      // 4. Cria vínculo na tabela `longevo_cuidador` como Administrador (`admin: true`)
-      await supabase.from('longevo_cuidador').insert({
-        'id_longevo': idLongevo,
-        'id_cuidador': idCuidador,
+      // 4. Cria o vínculo como Administrador (admin = true)
+      final apelido = _elderNickCtrl.text.trim().isEmpty
+          ? _elderNameCtrl.text.trim().split(' ').first
+          : _elderNickCtrl.text.trim();
+
+      await _supabase.from('longevo_cuidador').insert({
+        'id_longevo': longevoId,
+        'id_cuidador': cuidadorId,
         'admin': true,
-        'apelido_longevo': _elderNicknameCtrl.text.trim().isEmpty
-            ? _elderNameCtrl.text.trim().split(' ').first
-            : _elderNicknameCtrl.text.trim(),
+        'apelido_longevo': apelido,
         'relacionamento': _relationshipCtrl.text.trim(),
       });
 
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Cadastro concluído com sucesso!'),
@@ -102,184 +111,254 @@ class _RegisterAdminScreenState extends State<RegisterAdminScreen> {
         ),
       );
 
+      // 5. Entra direto na tela de seleção de idosos
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (_) => SelectElderScreen(cuidadorId: idCuidador),
+          builder: (_) => SelectElderScreen(cuidadorId: cuidadorId),
         ),
         (route) => false,
       );
     } on AuthException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro na autenticação: ${e.message}'), backgroundColor: AppTheme.danger),
-      );
+      _showError('Erro de autenticação: ${e.message}');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao salvar no banco: $e'), backgroundColor: AppTheme.danger),
-      );
+      _showError('Erro ao finalizar cadastro: $e');
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: AppTheme.danger,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Criar conta da família')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Stepper(
-              type: StepperType.horizontal,
-              currentStep: _currentStep,
-              onStepContinue: () {
-                if (_currentStep == 0) {
-                  setState(() => _currentStep = 1);
-                } else {
-                  _finishRegistration();
-                }
-              },
-              onStepCancel: () {
-                if (_currentStep > 0) {
-                  setState(() => _currentStep -= 1);
-                } else {
-                  Navigator.pop(context);
-                }
-              },
-              controlsBuilder: (context, details) {
-                return Padding(
-                  padding: const EdgeInsets.only(top: 24),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: details.onStepContinue,
-                          child: Text(
-                            _currentStep == 0 ? 'Próximo: Dados do Idoso' : 'Concluir Cadastro',
+      appBar: AppBar(
+        title: const Text(
+          'Criar Conta Administrador',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // SEÇÃO 1: DADOS DO ADMINISTRADOR
+                    const Text(
+                      '1. Seus dados (Administrador)',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.primaryStrong,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Você poderá convidar outros cuidadores depois.',
+                      style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _adminNameCtrl,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Seu nome completo',
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Informe seu nome.'
+                          : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _adminPhoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Telefone / WhatsApp',
+                        hintText: '(14) 99999-9999',
+                        prefixIcon: Icon(Icons.phone_outlined),
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Informe seu telefone.'
+                          : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _adminEmailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'E-mail de acesso',
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return 'Informe seu e-mail.';
+                        }
+                        if (!v.contains('@')) return 'E-mail inválido.';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _adminPasswordCtrl,
+                      obscureText: _obscurePassword,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: 'Crie uma senha',
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
                           ),
                         ),
                       ),
-                      if (_currentStep > 0) ...[
+                      validator: (v) => (v == null || v.length < 6)
+                          ? 'Mínimo de 6 caracteres.'
+                          : null,
+                    ),
+
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Divider(),
+                    ),
+
+                    // SEÇÃO 2: DADOS DO PRIMEIRO IDOSO
+                    const Text(
+                      '2. Primeiro idoso sob cuidado',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.primaryStrong,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Cadastre quem receberá os cuidados principais.',
+                      style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _elderNameCtrl,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Nome completo do idoso',
+                        prefixIcon: Icon(Icons.elderly),
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Informe o nome do idoso.'
+                          : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _elderNickCtrl,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Apelido carinhoso (ex: Vó Maria, Pai)',
+                        prefixIcon: Icon(Icons.favorite_border),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextFormField(
+                            controller: _elderCpfCtrl,
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                              labelText: 'CPF do idoso',
+                            ),
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? 'Informe o CPF.'
+                                : null,
+                          ),
+                        ),
                         const SizedBox(width: 12),
-                        TextButton(
-                          onPressed: details.onStepCancel,
-                          child: const Text('Voltar'),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _elderAgeCtrl,
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                              labelText: 'Idade',
+                            ),
+                          ),
                         ),
-                      ]
-                    ],
-                  ),
-                );
-              },
-              steps: [
-                Step(
-                  isActive: _currentStep >= 0,
-                  title: const Text('Seus dados'),
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Você será o Administrador principal e poderá convidar outros familiares.',
-                        style: TextStyle(color: AppTheme.textMuted),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _relationshipCtrl,
+                      textInputAction: TextInputAction.done,
+                      decoration: const InputDecoration(
+                        labelText: 'Seu parentesco / vínculo (ex: Filho, Neta)',
+                        prefixIcon: Icon(Icons.people_outline),
                       ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _adminNameCtrl,
-                        decoration: const InputDecoration(labelText: 'Seu nome completo'),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _adminAbbrCtrl,
-                              decoration: const InputDecoration(labelText: 'Apelido / Abreviação'),
-                            ),
+                    ),
+
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _registerAdminAndElder,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextField(
-                              controller: _adminCpfCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(labelText: 'Seu CPF'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _adminPhoneCtrl,
-                        keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(labelText: 'Telefone / WhatsApp'),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _adminEmailCtrl,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(labelText: 'E-mail de acesso'),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _adminPassCtrl,
-                        obscureText: true,
-                        decoration: const InputDecoration(labelText: 'Senha (mín. 6 dígitos)'),
-                      ),
-                    ],
-                  ),
-                ),
-                Step(
-                  isActive: _currentStep >= 1,
-                  title: const Text('Perfil do Idoso'),
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Cadastre a pessoa idosa que receberá os cuidados.',
-                        style: TextStyle(color: AppTheme.textMuted),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _elderNameCtrl,
-                        decoration: const InputDecoration(labelText: 'Nome completo do idoso'),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _elderNicknameCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Apelido carinhoso (ex: Dona Tereza, Pai)',
                         ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 22,
+                                width: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Concluir cadastro',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: TextField(
-                              controller: _elderCpfCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(labelText: 'CPF do idoso'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextField(
-                              controller: _elderAgeCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(labelText: 'Idade'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _relationshipCtrl,
-                        decoration: const InputDecoration(labelText: 'Seu parentesco / relação'),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
+          ),
+        ),
+      ),
     );
   }
 }
