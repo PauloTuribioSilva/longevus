@@ -7,8 +7,10 @@ environment:
   sdk: ^3.13.3
 
 dependencies:
+  file_picker: ^13.3.3
   flutter:
     sdk: flutter
+  image_picker: ^1.2.4
   supabase_flutter: ^2.18.3
 
 dev_dependencies:

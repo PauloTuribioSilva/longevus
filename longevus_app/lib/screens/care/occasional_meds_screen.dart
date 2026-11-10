@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
+import '../../features/admin/edit_med_screen.dart';
 import '../../models/longevo_model.dart';
 
 class OccasionalMedsScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class OccasionalMedsScreen extends StatefulWidget {
 
 class _OccasionalMedsScreenState extends State<OccasionalMedsScreen> {
   final _supabase = Supabase.instance.client;
-  late Future<List<Map<String, dynamic>>> _occasionalFuture;
+  late Future<List> _occasionalFuture;
 
   @override
   void initState() {
@@ -27,14 +28,32 @@ class _OccasionalMedsScreenState extends State<OccasionalMedsScreen> {
     _occasionalFuture = _fetchOccasionalMeds();
   }
 
-  Future<List<Map<String, dynamic>>> _fetchOccasionalMeds() async {
+  Future<List> _fetchOccasionalMeds() async {
     final response = await _supabase
         .from('prescricao')
         .select('*, medicamento(*), categoria_remedio_ocasional(*)')
         .eq('id_longevo', widget.vinculo.idLongevo)
         .eq('continuo', false);
 
-    return List<Map<String, dynamic>>.from(response);
+    return List.from(response);
+  }
+
+  Future<void> _abrirTelaMedicamento([Map<String, dynamic>? prescricao]) async {
+    final atualizado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditMedScreen(
+          idLongevo: widget.vinculo.idLongevo,
+          prescricao: prescricao,
+        ),
+      ),
+    );
+
+    if (atualizado == true && mounted) {
+      setState(() {
+        _occasionalFuture = _fetchOccasionalMeds();
+      });
+    }
   }
 
   Future<void> _registerOccasionalUse(Map<String, dynamic> presc) async {
@@ -93,134 +112,6 @@ class _OccasionalMedsScreenState extends State<OccasionalMedsScreen> {
         ),
       );
     }
-  }  void _openAddOccasionalDialog() {
-    final nameCtrl = TextEditingController();
-    final symptomCtrl = TextEditingController();
-    final dosageCtrl = TextEditingController();
-    bool isSaving = false;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 24,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Novo remédio eventual',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: AppTheme.primaryStrong,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: symptomCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Para o que serve? (ex: Dor de cabeça, Febre, Enjoo)',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Nome do remédio (ex: Dipirona 500mg)',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: dosageCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Dosagem / Orientação (ex: 1 comprimido ou 30 gotas)',
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: isSaving
-                          ? null
-                          : () async {
-                              if (nameCtrl.text.trim().isEmpty ||
-                                  symptomCtrl.text.trim().isEmpty) {
-                                return;
-                              }
-
-                              setModalState(() => isSaving = true);
-
-                              try {
-                                final catRes = await _supabase
-                                    .from('categoria_remedio_ocasional')
-                                    .insert({'nome': symptomCtrl.text.trim()})
-                                    .select('id_categoria_medicamento_ocasional')
-                                    .single();
-
-                                final medRes = await _supabase
-                                    .from('medicamento')
-                                    .insert({
-                                      'nome': nameCtrl.text.trim(),
-                                      'descricao': dosageCtrl.text.trim(),
-                                    })
-                                    .select('id_medicamento')
-                                    .single();
-
-                                await _supabase.from('prescricao').insert({
-                                  'id_longevo': widget.vinculo.idLongevo,
-                                  'id_medicamento': medRes['id_medicamento'],
-                                  'id_categoria_medicamento_ocasional':
-                                      catRes['id_categoria_medicamento_ocasional'],
-                                  'continuo': false,
-                                  'frequencia': 0,
-                                });
-
-                                if (!ctx.mounted) return;
-                                Navigator.pop(ctx);
-
-                                if (!mounted) return;
-                                setState(() {
-                                  _occasionalFuture = _fetchOccasionalMeds();
-                                });
-                              } catch (e) {
-                                setModalState(() => isSaving = false);
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(this.context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Erro ao salvar remédio: $e'),
-                                    backgroundColor: AppTheme.danger,
-                                  ),
-                                );
-                              }
-                            },
-                      child: isSaving
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Salvar remédio eventual'),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 
   @override
@@ -245,12 +136,12 @@ class _OccasionalMedsScreenState extends State<OccasionalMedsScreen> {
           ? FloatingActionButton.extended(
               backgroundColor: AppTheme.primary,
               foregroundColor: Colors.white,
-              onPressed: _openAddOccasionalDialog,
+              onPressed: () => _abrirTelaMedicamento(),
               icon: const Icon(Icons.add),
               label: const Text('Adicionar'),
             )
           : null,
-      body: FutureBuilder<List<Map<String, dynamic>>>(
+      body: FutureBuilder<List>(
         future: _occasionalFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -278,6 +169,7 @@ class _OccasionalMedsScreenState extends State<OccasionalMedsScreen> {
               final cat = presc['categoria_remedio_ocasional']
                   as Map<String, dynamic>?;
               final sintoma = cat?['nome'] ?? 'Uso eventual';
+              final String? fotoUrl = med['foto_url'] as String?;
 
               return Card(
                 elevation: 0,
@@ -285,11 +177,29 @@ class _OccasionalMedsScreenState extends State<OccasionalMedsScreen> {
                 color: AppTheme.successSoft,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
-                  side: BorderSide(color: AppTheme.success.withValues(alpha: 0.3)),
+                  side: BorderSide(
+                    color: AppTheme.success.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: ListTile(
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  leading: (fotoUrl != null && fotoUrl.isNotEmpty)
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            fotoUrl,
+                            width: 48,
+                            height: 48,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.medication_liquid_rounded,
+                              color: AppTheme.success,
+                              size: 32,
+                            ),
+                          ),
+                        )
+                      : null,
                   title: Text(
                     '${med['nome']} • $sintoma',
                     style: const TextStyle(
@@ -308,10 +218,24 @@ class _OccasionalMedsScreenState extends State<OccasionalMedsScreen> {
                       style: const TextStyle(color: AppTheme.textDark),
                     ),
                   ),
-                  trailing: const Icon(
-                    Icons.add_circle,
-                    color: AppTheme.success,
-                    size: 30,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.vinculo.isAdmin)
+                        IconButton(
+                          icon: const Icon(
+                            Icons.edit_outlined,
+                            color: AppTheme.primary,
+                          ),
+                          tooltip: 'Editar medicamento',
+                          onPressed: () => _abrirTelaMedicamento(presc),
+                        ),
+                      const Icon(
+                        Icons.add_circle,
+                        color: AppTheme.success,
+                        size: 30,
+                      ),
+                    ],
                   ),
                   onTap: () => _registerOccasionalUse(presc),
                 ),
