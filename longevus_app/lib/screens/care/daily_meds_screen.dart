@@ -209,7 +209,7 @@ class _DailyMedsScreenState extends State<DailyMedsScreen> {
                                     width: 48,
                                     height: 48,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
+                                    errorBuilder: (_, _, _) =>
                                         const SizedBox.shrink(),
                                   ),
                                 ),

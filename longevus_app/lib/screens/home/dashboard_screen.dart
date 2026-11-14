@@ -245,7 +245,7 @@ class DashboardScreen extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: isAdminItem ? AppTheme.primary.withOpacity(0.2) : AppTheme.line,
+          color: isAdminItem ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.line,
         ),
       ),
       child: ListTile(

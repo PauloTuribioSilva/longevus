@@ -8,8 +8,6 @@ import '../../core/widgets/photo_picker_avatar.dart';
 
 class EditMedScreen extends StatefulWidget {
   final int idLongevo;
-  /// Se vier preenchido, a tela abre em modo Edição; se null, abre em modo Criação.
-  /// Deve conter o join com 'medicamento', ex: .select('*, medicamento(*)')
   final Map<String, dynamic>? prescricao;
 
   const EditMedScreen({
@@ -57,7 +55,7 @@ class _EditMedScreenState extends State<EditMedScreen> {
       _isContinuo = widget.prescricao!['continuo'] as bool? ?? true;
       _idCategoriaSelecionada =
           widget.prescricao!['id_categoria_medicamento_ocasional'] as int?;
-      final freq = widget.prescricao!['frequencia'] ?? 0;
+      final freq = widget.prescricao!['frequencia'] ?? 8;
       _frequenciaCtrl = TextEditingController(text: freq.toString());
     } else {
       _frequenciaCtrl = TextEditingController(text: '8');
@@ -83,8 +81,10 @@ class _EditMedScreenState extends State<EditMedScreen> {
           .order('nome');
 
       if (!mounted) return;
+      final lista = List<Map<String, dynamic>>.from(data);
+
       setState(() {
-        _categorias = List.from(data);
+        _categorias = lista;
         if (_idCategoriaSelecionada == null && _categorias.isNotEmpty) {
           _idCategoriaSelecionada =
               _categorias.first['id_categoria_medicamento_ocasional'] as int;
@@ -115,17 +115,16 @@ class _EditMedScreenState extends State<EditMedScreen> {
     try {
       String? fotoUrl = _fotoAtualUrl;
 
-      // 1. Upload da foto do remédio, se selecionada
-      if (_novaFoto != null) {
-        final uploadedUrl = await StorageService.uploadImagem(
-          arquivo: _novaFoto!,
-          pasta: 'remedios',
-          identificador: 'med_${widget.idLongevo}',
-        );
-        if (uploadedUrl != null) {
-          fotoUrl = uploadedUrl;
-        }
-      }
+    if (_novaFoto != null) {
+     final uploadedUrl = await StorageService.uploadImagem(
+      arquivo: _novaFoto!,
+      pasta: 'remedios', // subpasta dentro de longevus_arquivos
+      identificador: 'med_${widget.idLongevo}_${DateTime.now().millisecondsSinceEpoch}',
+    );
+    if (uploadedUrl != null) {
+      fotoUrl = uploadedUrl;
+  }
+}
 
       final dadosMedicamento = {
         'nome': _nomeCtrl.text.trim(),
@@ -138,7 +137,6 @@ class _EditMedScreenState extends State<EditMedScreen> {
           _isContinuo ? (int.tryParse(_frequenciaCtrl.text.trim()) ?? 8) : 0;
 
       if (_isEditing) {
-        // MODO EDIÇÃO
         final int idPrescricao = widget.prescricao!['id_prescricao'] as int;
         final int idMedicamento = widget.prescricao!['id_medicamento'] as int;
 
@@ -158,7 +156,6 @@ class _EditMedScreenState extends State<EditMedScreen> {
               : null,
         }).eq('id_prescricao', idPrescricao);
       } else {
-        // MODO CRIAÇÃO
         final novoMed = await _supabase
             .from('medicamento')
             .insert(dadosMedicamento)
@@ -187,6 +184,7 @@ class _EditMedScreenState extends State<EditMedScreen> {
                 ? 'Medicamento atualizado com sucesso!'
                 : 'Medicamento cadastrado com sucesso!',
           ),
+          backgroundColor: AppTheme.success,
         ),
       );
       Navigator.pop(context, true);
@@ -207,9 +205,9 @@ class _EditMedScreenState extends State<EditMedScreen> {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remover Medicamento'),
+        title: const Text('Excluir Medicamento'),
         content: const Text(
-          'Deseja realmente remover este medicamento da lista do idoso?',
+          'Deseja realmente excluir este medicamento da lista?',
         ),
         actions: [
           TextButton(
@@ -219,7 +217,7 @@ class _EditMedScreenState extends State<EditMedScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: AppTheme.danger),
-            child: const Text('Remover'),
+            child: const Text('Excluir Definitivamente'),
           ),
         ],
       ),
@@ -237,14 +235,14 @@ class _EditMedScreenState extends State<EditMedScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Medicamento removido.')),
+        const SnackBar(content: Text('Medicamento excluído com sucesso.')),
       );
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erro ao remover: $e'),
+          content: Text('Erro ao excluir: $e'),
           backgroundColor: AppTheme.danger,
         ),
       );
@@ -262,7 +260,7 @@ class _EditMedScreenState extends State<EditMedScreen> {
           if (_isEditing)
             IconButton(
               icon: const Icon(Icons.delete_outline, color: AppTheme.danger),
-              tooltip: 'Remover medicamento',
+              tooltip: 'Excluir medicamento',
               onPressed: _isSaving ? null : _excluirPrescricao,
             ),
         ],
@@ -277,7 +275,6 @@ class _EditMedScreenState extends State<EditMedScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Foto da caixa / frasco do remédio
                   PhotoPickerAvatar(
                     currentPhotoUrl: _fotoAtualUrl,
                     selectedImageBytes: _novaFotoBytes,
@@ -293,12 +290,11 @@ class _EditMedScreenState extends State<EditMedScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Nome do medicamento
                   TextFormField(
                     controller: _nomeCtrl,
                     decoration: const InputDecoration(
                       labelText: 'Nome e Dosagem *',
-                      hintText: 'Ex: Losartana Potássica 50mg',
+                      hintText: 'Ex: Vonau 30 g',
                       prefixIcon: Icon(Icons.medication_outlined),
                     ),
                     validator: (v) => (v == null || v.trim().isEmpty)
@@ -307,13 +303,12 @@ class _EditMedScreenState extends State<EditMedScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Instruções / Posologia
                   TextFormField(
                     controller: _descricaoCtrl,
                     maxLines: 3,
                     decoration: const InputDecoration(
                       labelText: 'Instruções de Uso *',
-                      hintText: 'Ex: Tomar 1 comprimido em jejum com água',
+                      hintText: 'Ex: Utilizar em caso de enjoo',
                       prefixIcon: Icon(Icons.notes_rounded),
                     ),
                     validator: (v) => (v == null || v.trim().isEmpty)
@@ -322,7 +317,6 @@ class _EditMedScreenState extends State<EditMedScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Link da bula (opcional)
                   TextFormField(
                     controller: _bulaCtrl,
                     decoration: const InputDecoration(
@@ -333,7 +327,7 @@ class _EditMedScreenState extends State<EditMedScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Seletor Contínuo vs Ocasional
+                  // Switch Uso Cotidiano / Eventual
                   Container(
                     decoration: BoxDecoration(
                       color: AppTheme.primarySoft.withValues(alpha: 0.4),
@@ -352,23 +346,27 @@ class _EditMedScreenState extends State<EditMedScreen> {
                       subtitle: Text(
                         _isContinuo
                             ? 'Aparece na rotina diária de horários'
-                            : 'Fica disponível na aba de remédios ocasionais',
+                            : 'Fica disponível na aba de remédios eventuais',
                       ),
                       activeThumbColor: AppTheme.primary,
                       value: _isContinuo,
-                      onChanged: (val) => setState(() => _isContinuo = val),
+                      onChanged: (val) {
+                        setState(() {
+                          _isContinuo = val;
+                        });
+                      },
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // Campo condicional: Frequência (se contínuo) OU Categoria (se eventual)
+                  // Campos de acordo com a seleção
                   if (_isContinuo)
                     TextFormField(
                       controller: _frequenciaCtrl,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         labelText: 'Intervalo entre doses (em horas) *',
-                        hintText: 'Ex: 8 (para 8/8h), 12 (12/12h), 24 (1x dia)',
+                        hintText: 'Ex: 8',
                         prefixIcon: Icon(Icons.schedule_rounded),
                       ),
                       validator: (v) {
@@ -382,6 +380,19 @@ class _EditMedScreenState extends State<EditMedScreen> {
                     )
                   else if (_carregandoCategorias)
                     const Center(child: CircularProgressIndicator())
+                  else if (_categorias.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.amber.shade300),
+                      ),
+                      child: const Text(
+                        'Nenhuma categoria encontrada no banco. Cadastre categorias na tabela "categoria_remedio_ocasional".',
+                        style: TextStyle(fontSize: 13, color: Colors.brown),
+                      ),
+                    )
                   else
                     DropdownButtonFormField<int>(
                       initialValue: _idCategoriaSelecionada,
@@ -429,6 +440,23 @@ class _EditMedScreenState extends State<EditMedScreen> {
                       ),
                     ),
                   ),
+
+                  // Botão Excluir (visível no corpo quando estiver editando)
+                  if (_isEditing) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.danger,
+                          side: const BorderSide(color: AppTheme.danger),
+                        ),
+                        onPressed: _isSaving ? null : _excluirPrescricao,
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('Excluir este medicamento'),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

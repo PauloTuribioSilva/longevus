@@ -192,7 +192,7 @@ class _OccasionalMedsScreenState extends State<OccasionalMedsScreen> {
                             width: 48,
                             height: 48,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(
+                            errorBuilder: (_, _, _) => const Icon(
                               Icons.medication_liquid_rounded,
                               color: AppTheme.success,
                               size: 32,
