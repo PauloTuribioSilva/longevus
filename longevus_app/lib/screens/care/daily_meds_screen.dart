@@ -2,6 +2,7 @@ import 'dart:core';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/empty_state.dart';
 import '../../features/admin/edit_med_screen.dart';
 import '../../models/longevo_model.dart';
 import 'alarm_alert_screen.dart';
@@ -107,15 +108,9 @@ class _DailyMedsScreenState extends State<DailyMedsScreen> {
 
           final meds = snapshot.data ?? [];
           if (meds.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'Nenhum remédio contínuo cadastrado ainda.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppTheme.textMuted, fontSize: 16),
-                ),
-              ),
+            return const EmptyState(
+              icon: Icons.alarm_outlined,
+              message: 'Nenhum remédio contínuo cadastrado ainda.',
             );
           }
 
@@ -161,8 +156,9 @@ class _DailyMedsScreenState extends State<DailyMedsScreen> {
                         height: 84,
                         decoration: BoxDecoration(
                           color: AppTheme.secondarySoft,
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                           border: Border.all(color: AppTheme.secondary),
+                          boxShadow: AppTheme.softShadow,
                         ),
                         alignment: Alignment.center,
                         child: Column(
@@ -195,9 +191,10 @@ class _DailyMedsScreenState extends State<DailyMedsScreen> {
                           constraints: const BoxConstraints(minHeight: 84),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(18),
+                            color: AppTheme.panel,
+                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                             border: Border.all(color: AppTheme.line),
+                            boxShadow: AppTheme.softShadow,
                           ),
                           child: Row(
                             children: [

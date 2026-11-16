@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/empty_state.dart';
 import '../../features/admin/edit_appointment_screen.dart';
 import '../../models/longevo_model.dart';
 
@@ -119,11 +120,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
           final consultas = snapshot.data ?? [];
           if (consultas.isEmpty) {
-            return const Center(
-              child: Text(
-                'Nenhuma consulta agendada.',
-                style: TextStyle(color: AppTheme.textMuted, fontSize: 16),
-              ),
+            return const EmptyState(
+              icon: Icons.calendar_month_outlined,
+              message: 'Nenhuma consulta agendada.',
             );
           }
 
@@ -134,15 +133,13 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
               final item = consultas[index];
               final bool realizada = item['realizada'] as bool? ?? false;
 
-              return Card(
-                elevation: 0,
+              return Container(
                 margin: const EdgeInsets.only(bottom: 14),
-                color: realizada ? Colors.grey.shade100 : Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  side: BorderSide(
-                    color: realizada ? Colors.grey.shade300 : AppTheme.line,
-                  ),
+                decoration: BoxDecoration(
+                  color: realizada ? AppTheme.bgStrong : AppTheme.panel,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  border: Border.all(color: AppTheme.line),
+                  boxShadow: realizada ? null : AppTheme.softShadow,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),

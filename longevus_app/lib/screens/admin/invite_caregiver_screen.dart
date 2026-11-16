@@ -190,11 +190,20 @@ class _InviteCaregiverScreenState extends State<InviteCaregiverScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppTheme.primarySoft,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.group_add, color: AppTheme.primary),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: AppTheme.primaryGradient),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.group_add, color: Colors.white, size: 20),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -330,14 +339,18 @@ class _InviteCaregiverScreenState extends State<InviteCaregiverScreen> {
                     final bool isAdm = row['admin'] ?? false;
                     final int idVinculo = row['id_longevo_cuidador'];
 
-                    return Card(
-                      elevation: 0,
+                    return Container(
                       margin: const EdgeInsets.only(bottom: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: const BorderSide(color: AppTheme.line),
+                      decoration: BoxDecoration(
+                        color: AppTheme.panel,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        border: Border.all(color: AppTheme.line),
+                        boxShadow: AppTheme.softShadow,
                       ),
                       child: ListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        ),
                         leading: CircleAvatar(
                           backgroundColor: isAdm
                               ? AppTheme.primarySoft

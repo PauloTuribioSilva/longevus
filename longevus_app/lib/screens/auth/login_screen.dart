@@ -116,25 +116,31 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     // Ícone / Cabeçalho
                     Container(
-                      width: 72,
-                      height: 72,
+                      width: 76,
+                      height: 76,
                       decoration: BoxDecoration(
-                        color: AppTheme.primarySoft,
-                        borderRadius: BorderRadius.circular(20),
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: AppTheme.primaryGradient,
+                        ),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                        boxShadow: AppTheme.coloredShadow,
                       ),
                       child: const Icon(
                         Icons.favorite_rounded,
-                        size: 38,
-                        color: AppTheme.primary,
+                        size: 36,
+                        color: AppTheme.secondary,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
                     const Text(
                       'Bem-vindo ao Longevus',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w900,
                         color: AppTheme.primaryStrong,
+                        letterSpacing: -0.5,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -143,9 +149,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(
                         fontSize: 15,
                         color: AppTheme.textMuted,
+                        height: 1.4,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 36),
 
                     // Campo E-mail
                     TextFormField(
@@ -204,34 +211,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 28),
 
                     // Botão Entrar
-                    SizedBox(
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _signIn,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 22,
-                                width: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text(
-                                'Entrar',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _signIn,
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
                               ),
-                      ),
+                            )
+                          : const Text('Entrar'),
                     ),
                   const SizedBox(height: 20),
 Row(

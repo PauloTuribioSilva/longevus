@@ -41,6 +41,7 @@ class PhotoPickerAvatar extends StatelessWidget {
               shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
               borderRadius: isCircle ? null : BorderRadius.circular(18),
               border: Border.all(color: AppTheme.primary, width: 2),
+              boxShadow: AppTheme.softShadow,
               image: imageProvider != null
                   ? DecorationImage(
                       image: imageProvider,

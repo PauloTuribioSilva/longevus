@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/empty_state.dart';
 import '../../models/longevo_model.dart';
 import '../auth/login_screen.dart';
 import 'dashboard_screen.dart';
@@ -251,21 +252,13 @@ class _SelectElderScreenState extends State<SelectElderScreen> {
                   }
                   final idosos = snapshot.data ?? [];
                   if (idosos.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Nenhum idoso vinculado a este cuidador.',
-                            style: TextStyle(color: AppTheme.textMuted),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: _openAddElderDialog,
-                            icon: const Icon(Icons.add),
-                            label: const Text('Cadastrar primeiro idoso'),
-                          ),
-                        ],
+                    return EmptyState(
+                      icon: Icons.elderly_outlined,
+                      message: 'Nenhum idoso vinculado a este cuidador.',
+                      action: ElevatedButton.icon(
+                        onPressed: _openAddElderDialog,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Cadastrar primeiro idoso'),
                       ),
                     );
                   }
@@ -292,20 +285,37 @@ class _SelectElderScreenState extends State<SelectElderScreen> {
                             ),
                           );
                         },
-                        borderRadius: BorderRadius.circular(22),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(22),
+                            color: AppTheme.panel,
+                            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                             border: Border.all(color: AppTheme.line),
+                            boxShadow: AppTheme.softShadow,
                           ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              CircleAvatar(
-                                radius: 36,
-                                backgroundColor: AppTheme.secondarySoft,
+                              Container(
+                                width: 72,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [AppTheme.secondary, AppTheme.secondaryStrong],
+                                  ),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppTheme.secondary.withValues(alpha: 0.45),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                ),
+                                alignment: Alignment.center,
                                 child: Text(
                                   item.apelidoLongevo.isNotEmpty
                                       ? item.apelidoLongevo[0].toUpperCase()

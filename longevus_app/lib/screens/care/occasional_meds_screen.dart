@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/empty_state.dart';
 import '../../features/admin/edit_med_screen.dart';
 import '../../models/longevo_model.dart';
 
@@ -152,11 +153,9 @@ class _OccasionalMedsScreenState extends State<OccasionalMedsScreen> {
           }
           final meds = snapshot.data ?? [];
           if (meds.isEmpty) {
-            return const Center(
-              child: Text(
-                'Nenhum remédio eventual cadastrado.',
-                style: TextStyle(color: AppTheme.textMuted, fontSize: 16),
-              ),
+            return const EmptyState(
+              icon: Icons.medication_liquid_outlined,
+              message: 'Nenhum remédio eventual cadastrado.',
             );
           }
 
@@ -171,17 +170,20 @@ class _OccasionalMedsScreenState extends State<OccasionalMedsScreen> {
               final sintoma = cat?['nome'] ?? 'Uso eventual';
               final String? fotoUrl = med['foto_url'] as String?;
 
-              return Card(
-                elevation: 0,
+              return Container(
                 margin: const EdgeInsets.only(bottom: 12),
-                color: AppTheme.successSoft,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  side: BorderSide(
+                decoration: BoxDecoration(
+                  color: AppTheme.successSoft,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  border: Border.all(
                     color: AppTheme.success.withValues(alpha: 0.3),
                   ),
+                  boxShadow: AppTheme.softShadow,
                 ),
                 child: ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   leading: (fotoUrl != null && fotoUrl.isNotEmpty)

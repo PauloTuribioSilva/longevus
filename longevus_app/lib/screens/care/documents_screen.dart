@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/empty_state.dart';
 import '../../models/longevo_model.dart';
 
 class DocumentsScreen extends StatefulWidget {
@@ -343,11 +344,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
 
           final docs = snapshot.data ?? [];
           if (docs.isEmpty) {
-            return const Center(
-              child: Text(
-                'Nenhum laudo ou carteirinha cadastrado.',
-                style: TextStyle(color: AppTheme.textMuted, fontSize: 16),
-              ),
+            return const EmptyState(
+              icon: Icons.folder_shared_outlined,
+              message: 'Nenhum laudo ou carteirinha cadastrado.',
             );
           }
 
@@ -358,14 +357,18 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               final doc = docs[index];
               final tipo = doc['tipo'] as String? ?? 'laudo_pdf';
 
-              return Card(
-                elevation: 0,
+              return Container(
                 margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  side: const BorderSide(color: AppTheme.line),
+                decoration: BoxDecoration(
+                  color: AppTheme.panel,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  border: Border.all(color: AppTheme.line),
+                  boxShadow: AppTheme.softShadow,
                 ),
                 child: ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 18,
                     vertical: 10,

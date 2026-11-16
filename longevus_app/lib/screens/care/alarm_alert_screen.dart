@@ -89,26 +89,38 @@ class _AlarmAlertScreenState extends State<AlarmAlertScreen> {
     final displayHour = _formatHour(widget.prescricao?['inicio_uso_continuo']);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.bg,
       appBar: AppBar(title: Text('Hora do remédio • ${widget.elderName}')),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              displayHour,
-              style: const TextStyle(
-                fontSize: 54,
-                fontWeight: FontWeight.w900,
-                color: AppTheme.primaryStrong,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: AppTheme.primaryGradient),
+                borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                boxShadow: AppTheme.coloredShadow,
+              ),
+              child: Text(
+                displayHour,
+                style: const TextStyle(
+                  fontSize: 54,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 20),
             Text(
               medName,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.primaryStrong,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
